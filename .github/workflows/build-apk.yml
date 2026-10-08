@@ -14,6 +14,8 @@ jobs:
     env:
       ANDROID_HOME: /usr/local/lib/android/sdk
       ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
+      KS_PASS: 'PhoneSim1!2024'
+      KS_B64: ${{ secrets.KS_B64 }}
 
     steps:
     - name: Checkout code
@@ -38,7 +40,7 @@ jobs:
         ls -la
         mkdir -p www
         cp index.html www/index.html
-        echo '{"name":"phone-simulator","version":"1.0.0","private":true}' > package.json
+        echo '{"name":"phone-simulator","version":"1.1.0","private":true}' > package.json
         echo '{"appId":"com.sina.phonesim1","appName":"Phone Simulator 1","webDir":"www"}' > capacitor.config.json
 
     - name: Install Capacitor
@@ -47,15 +49,173 @@ jobs:
     - name: Add Android platform
       run: npx cap add android
 
-    - name: Build APK
+    - name: Set app version
+      run: sed -i 's/versionName "1.0"/versionName "1.1.0"/' android/app/build.gradle
+
+    - name: Generate custom icon and splash
+      run: |
+        sudo apt-get update -qq
+        sudo apt-get install -y -qq librsvg2-bin
+        RES=android/app/src/main/res
+        mkdir -p $RES/drawable $RES/mipmap-anydpi-v26
+        cat > icon-bg.svg <<'SVG'
+        <svg xmlns="http://www.w3.org/2000/svg" width="432" height="432" viewBox="0 0 432 432">
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="432" y2="432" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#4f8cff"/>
+              <stop offset="1" stop-color="#9a5cff"/>
+            </linearGradient>
+          </defs>
+          <rect width="432" height="432" fill="url(#g)"/>
+          <circle cx="70" cy="52" r="150" fill="#ffffff" opacity="0.07"/>
+          <circle cx="392" cy="396" r="170" fill="#ffffff" opacity="0.07"/>
+        </svg>
+        SVG
+        cat > icon-fg.svg <<'SVG'
+        <svg xmlns="http://www.w3.org/2000/svg" width="432" height="432" viewBox="0 0 432 432">
+          <rect x="156" y="100" width="120" height="232" rx="24" fill="#ffffff"/>
+          <rect x="166" y="130" width="100" height="172" rx="10" fill="#101527"/>
+          <circle cx="216" cy="112" r="6" fill="#101527"/>
+          <path d="M184 226 L194 196 L208 216 L216 188 L224 216 L238 196 L248 226 Z" fill="#ffc93c"/>
+          <circle cx="194" cy="188" r="3.5" fill="#ffc93c"/>
+          <circle cx="216" cy="180" r="3.5" fill="#ffc93c"/>
+          <circle cx="238" cy="188" r="3.5" fill="#ffc93c"/>
+          <rect x="184" y="233" width="64" height="7" rx="3.5" fill="#ffc93c"/>
+          <rect x="186" y="266" width="12" height="16" rx="3" fill="#4f8cff"/>
+          <rect x="202" y="258" width="12" height="24" rx="3" fill="#6fa2ff"/>
+          <rect x="218" y="250" width="12" height="32" rx="3" fill="#8f8cff"/>
+          <rect x="234" y="242" width="12" height="40" rx="3" fill="#9a5cff"/>
+          <rect x="196" y="290" width="40" height="5" rx="2.5" fill="#ffffff" opacity="0.5"/>
+        </svg>
+        SVG
+        cat > icon-full.svg <<'SVG'
+        <svg xmlns="http://www.w3.org/2000/svg" width="432" height="432" viewBox="0 0 432 432">
+          <defs>
+            <linearGradient id="g" x1="0" y1="0" x2="432" y2="432" gradientUnits="userSpaceOnUse">
+              <stop offset="0" stop-color="#4f8cff"/>
+              <stop offset="1" stop-color="#9a5cff"/>
+            </linearGradient>
+            <clipPath id="r"><rect width="432" height="432" rx="96"/></clipPath>
+          </defs>
+          <g clip-path="url(#r)">
+            <rect width="432" height="432" fill="url(#g)"/>
+            <circle cx="70" cy="52" r="150" fill="#ffffff" opacity="0.07"/>
+            <circle cx="392" cy="396" r="170" fill="#ffffff" opacity="0.07"/>
+            <path d="M304 114 l6 14 14 6 -14 6 -6 14 -6 -14 -14 -6 14 -6 z" fill="#ffffff" opacity="0.95"/>
+            <path d="M112 296 l4 10 10 4 -10 4 -4 10 -4 -10 -10 -4 10 -4 z" fill="#ffffff" opacity="0.85"/>
+            <rect x="156" y="100" width="120" height="232" rx="24" fill="#ffffff"/>
+            <rect x="166" y="130" width="100" height="172" rx="10" fill="#101527"/>
+            <circle cx="216" cy="112" r="6" fill="#101527"/>
+            <path d="M184 226 L194 196 L208 216 L216 188 L224 216 L238 196 L248 226 Z" fill="#ffc93c"/>
+            <circle cx="194" cy="188" r="3.5" fill="#ffc93c"/>
+            <circle cx="216" cy="180" r="3.5" fill="#ffc93c"/>
+            <circle cx="238" cy="188" r="3.5" fill="#ffc93c"/>
+            <rect x="184" y="233" width="64" height="7" rx="3.5" fill="#ffc93c"/>
+            <rect x="186" y="266" width="12" height="16" rx="3" fill="#4f8cff"/>
+            <rect x="202" y="258" width="12" height="24" rx="3" fill="#6fa2ff"/>
+            <rect x="218" y="250" width="12" height="32" rx="3" fill="#8f8cff"/>
+            <rect x="234" y="242" width="12" height="40" rx="3" fill="#9a5cff"/>
+            <rect x="196" y="290" width="40" height="5" rx="2.5" fill="#ffffff" opacity="0.5"/>
+          </g>
+        </svg>
+        SVG
+        cat > icon-splash.svg <<'SVG'
+        <svg xmlns="http://www.w3.org/2000/svg" width="480" height="800" viewBox="0 0 480 800">
+          <defs>
+            <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5">
+              <stop offset="0" stop-color="#4f8cff" stop-opacity="0.35"/>
+              <stop offset="1" stop-color="#4f8cff" stop-opacity="0"/>
+            </radialGradient>
+          </defs>
+          <rect width="480" height="800" fill="#0a0e17"/>
+          <circle cx="240" cy="400" r="270" fill="url(#glow)"/>
+          <g transform="translate(24,184)">
+            <rect x="156" y="100" width="120" height="232" rx="24" fill="#ffffff"/>
+            <rect x="166" y="130" width="100" height="172" rx="10" fill="#101527"/>
+            <circle cx="216" cy="112" r="6" fill="#101527"/>
+            <path d="M184 226 L194 196 L208 216 L216 188 L224 216 L238 196 L248 226 Z" fill="#ffc93c"/>
+            <circle cx="194" cy="188" r="3.5" fill="#ffc93c"/>
+            <circle cx="216" cy="180" r="3.5" fill="#ffc93c"/>
+            <circle cx="238" cy="188" r="3.5" fill="#ffc93c"/>
+            <rect x="184" y="233" width="64" height="7" rx="3.5" fill="#ffc93c"/>
+            <rect x="186" y="266" width="12" height="16" rx="3" fill="#4f8cff"/>
+            <rect x="202" y="258" width="12" height="24" rx="3" fill="#6fa2ff"/>
+            <rect x="218" y="250" width="12" height="32" rx="3" fill="#8f8cff"/>
+            <rect x="234" y="242" width="12" height="40" rx="3" fill="#9a5cff"/>
+            <rect x="196" y="290" width="40" height="5" rx="2.5" fill="#ffffff" opacity="0.5"/>
+          </g>
+        </svg>
+        SVG
+        rsvg-convert -w 48  -h 48  icon-full.svg -o $RES/mipmap-mdpi/ic_launcher.png
+        rsvg-convert -w 72  -h 72  icon-full.svg -o $RES/mipmap-hdpi/ic_launcher.png
+        rsvg-convert -w 96  -h 96  icon-full.svg -o $RES/mipmap-xhdpi/ic_launcher.png
+        rsvg-convert -w 144 -h 144 icon-full.svg -o $RES/mipmap-xxhdpi/ic_launcher.png
+        rsvg-convert -w 192 -h 192 icon-full.svg -o $RES/mipmap-xxxhdpi/ic_launcher.png
+        rsvg-convert -w 48  -h 48  icon-full.svg -o $RES/mipmap-mdpi/ic_launcher_round.png
+        rsvg-convert -w 72  -h 72  icon-full.svg -o $RES/mipmap-hdpi/ic_launcher_round.png
+        rsvg-convert -w 96  -h 96  icon-full.svg -o $RES/mipmap-xhdpi/ic_launcher_round.png
+        rsvg-convert -w 144 -h 144 icon-full.svg -o $RES/mipmap-xxhdpi/ic_launcher_round.png
+        rsvg-convert -w 192 -h 192 icon-full.svg -o $RES/mipmap-xxxhdpi/ic_launcher_round.png
+        rsvg-convert -w 108 -h 108 icon-fg.svg -o $RES/mipmap-mdpi/ic_launcher_foreground.png
+        rsvg-convert -w 162 -h 162 icon-fg.svg -o $RES/mipmap-hdpi/ic_launcher_foreground.png
+        rsvg-convert -w 216 -h 216 icon-fg.svg -o $RES/mipmap-xhdpi/ic_launcher_foreground.png
+        rsvg-convert -w 324 -h 324 icon-fg.svg -o $RES/mipmap-xxhdpi/ic_launcher_foreground.png
+        rsvg-convert -w 432 -h 432 icon-fg.svg -o $RES/mipmap-xxxhdpi/ic_launcher_foreground.png
+        rsvg-convert -w 108 -h 108 icon-bg.svg -o $RES/mipmap-mdpi/ic_launcher_background.png
+        rsvg-convert -w 162 -h 162 icon-bg.svg -o $RES/mipmap-hdpi/ic_launcher_background.png
+        rsvg-convert -w 216 -h 216 icon-bg.svg -o $RES/mipmap-xhdpi/ic_launcher_background.png
+        rsvg-convert -w 324 -h 324 icon-bg.svg -o $RES/mipmap-xxhdpi/ic_launcher_background.png
+        rsvg-convert -w 432 -h 432 icon-bg.svg -o $RES/mipmap-xxxhdpi/ic_launcher_background.png
+        rsvg-convert -w 480 -h 800 icon-splash.svg -o $RES/drawable/splash.png
+        rsvg-convert -w 512 -h 512 icon-full.svg -o icon-512.png
+        cat > $RES/mipmap-anydpi-v26/ic_launcher.xml <<'XML'
+        <?xml version="1.0" encoding="utf-8"?>
+        <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+            <background android:drawable="@mipmap/ic_launcher_background"/>
+            <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+        </adaptive-icon>
+        XML
+        cat > $RES/mipmap-anydpi-v26/ic_launcher_round.xml <<'XML'
+        <?xml version="1.0" encoding="utf-8"?>
+        <adaptive-icon xmlns:android="http://schemas.android.com/apk/res/android">
+            <background android:drawable="@mipmap/ic_launcher_background"/>
+            <foreground android:drawable="@mipmap/ic_launcher_foreground"/>
+        </adaptive-icon>
+        XML
+        echo "--- Icons generated ---"
+
+    - name: Build release APK
       run: |
         cd android
         chmod +x gradlew
-        ./gradlew assembleDebug --no-daemon
+        ./gradlew assembleRelease --no-daemon
 
-    - name: Upload APK
+    - name: Sign APK
+      run: |
+        if [ -z "$KS_B64" ]; then
+          echo "خطا: Secret با نام KS_B64 هنوز تنظیم نشده! فاز ۲ را انجام بده."
+          exit 1
+        fi
+        echo "$KS_B64" | base64 -d > release.keystore
+        BT=$(ls $ANDROID_HOME/build-tools | sort -V | tail -1)
+        echo "Using build-tools $BT"
+        OUT=android/app/build/outputs/apk/release
+        ls $OUT
+        $ANDROID_HOME/build-tools/$BT/zipalign -f 4 $OUT/app-release-unsigned.apk $OUT/aligned.apk
+        $ANDROID_HOME/build-tools/$BT/apksigner sign \
+          --ks release.keystore \
+          --ks-pass pass:$KS_PASS \
+          --key-pass pass:$KS_PASS \
+          --out $OUT/PhoneSimulator1-v1.1.0-release.apk \
+          $OUT/aligned.apk
+        $ANDROID_HOME/build-tools/$BT/apksigner verify --print-certs $OUT/PhoneSimulator1-v1.1.0-release.apk
+        echo "✅ APK امضا شد!"
+
+    - name: Upload APK and store icon
       uses: actions/upload-artifact@v4
       with:
-        name: Phone-Simulator-1-APK
-        path: android/app/build/outputs/apk/debug/app-debug.apk
+        name: Phone-Simulator-1-Release
+        path: |
+          android/app/build/outputs/apk/release/PhoneSimulator1-v1.1.0-release.apk
+          icon-512.png
         retention-days: 30
