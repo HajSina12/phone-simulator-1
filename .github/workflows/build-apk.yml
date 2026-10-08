@@ -11,6 +11,9 @@ on:
 jobs:
   build:
     runs-on: ubuntu-latest
+    env:
+      ANDROID_HOME: /usr/local/lib/android/sdk
+      ANDROID_SDK_ROOT: /usr/local/lib/android/sdk
 
     steps:
     - name: Checkout code
@@ -27,18 +30,19 @@ jobs:
         distribution: 'temurin'
         java-version: '17'
 
-    - name: Setup Android SDK
-      uses: android-actions/setup-android@v3
+    - name: Accept Android licenses
+      run: yes | sdkmanager --licenses > /dev/null || true
 
     - name: Prepare project
       run: |
+        ls -la
         mkdir -p www
         cp index.html www/index.html
         echo '{"name":"phone-simulator","version":"1.0.0","private":true}' > package.json
         echo '{"appId":"com.sina.phonesim1","appName":"Phone Simulator 1","webDir":"www"}' > capacitor.config.json
 
     - name: Install Capacitor
-      run: npm install @capacitor/core @capacitor/cli @capacitor/android
+      run: npm install @capacitor/core@6 @capacitor/cli@6 @capacitor/android@6
 
     - name: Add Android platform
       run: npx cap add android
